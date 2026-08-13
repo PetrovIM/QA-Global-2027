@@ -8,5 +8,6 @@ __pycache__/
 # IDE
 .idea/
 .vscode/
+.env
 
 .DS_Store
