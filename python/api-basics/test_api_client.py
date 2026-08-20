@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-from test_data import CREATE_USER_PAYLOAD
+from test_data import *
 from unittest.mock import Mock
 
 
@@ -109,15 +109,25 @@ def test_post_uses_timeout(api_client):
     assert mock_session.request.call_args.kwargs["timeout"] == 10
 
 
-def test_post_request_arguments(api_client):
+def test_mock_called_once_with():
+    mock_session = Mock()
+    mock_session.request("GET", "/users")
+    mock_session.request.assert_called_once_with("GET", "/users")
+
+
+@pytest.mark.parametrize("method, endpoint, payload", [("post", "/users", CREATE_USER_PAYLOAD),
+("put", "/users/1", UPDATE_USER_PAYLOAD),
+("patch", "/users/1",CREATE_USER_PAYLOAD)])
+def test_parametrize(api_client, method, endpoint, payload):
     mock_session = Mock()
     api_client.session = mock_session
-    test_url = "https://jsonplaceholder.typicode.com/users"
-    headers_test = api_client.headers
-    api_client.post("/users", CREATE_USER_PAYLOAD)
-    request_headers = mock_session.request.call_args.kwargs["headers"]
-    assert mock_session.request.call_args[0][0] == "POST"
-    assert mock_session.request.call_args[0][1] == test_url
-    assert mock_session.request.call_args.kwargs["json"] == CREATE_USER_PAYLOAD
-    assert request_headers == headers_test
-    assert mock_session.request.call_args.kwargs["timeout"] == 10
+    expected_url = api_client._build_url(endpoint)
+    expected_method = method.upper()
+    request_method = getattr(api_client, method)
+    request_method(endpoint, payload)
+    mock_session.request.assert_called_once_with(expected_method,
+                                                 expected_url,
+                                                 json=payload,
+                                                 headers=api_client.headers,
+                                                 params=None,
+                                                 timeout=10)
