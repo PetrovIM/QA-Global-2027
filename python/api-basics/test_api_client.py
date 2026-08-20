@@ -131,3 +131,5 @@ def test_parametrize(api_client, method, endpoint, payload):
                                                  headers=api_client.headers,
                                                  params=None,
                                                  timeout=10)
+
+
