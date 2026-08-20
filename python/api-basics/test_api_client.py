@@ -2,7 +2,6 @@ import pytest
 import requests
 
 from test_data import CREATE_USER_PAYLOAD
-from unittest.mock import patch
 from unittest.mock import Mock
 
 
@@ -83,3 +82,42 @@ def test_get_request_arguments(api_client):
     assert mock_session.request.call_args.kwargs["params"] == params
     assert mock_session.request.call_args.kwargs["timeout"] == 10
 
+
+def test_post_uses_correct_payload(api_client):
+    mock_session = Mock()
+    api_client.session = mock_session
+    test_url = "https://jsonplaceholder.typicode.com/users"
+    api_client.post("/users", CREATE_USER_PAYLOAD)
+    assert mock_session.request.call_args[0][0] == "POST"
+    assert mock_session.request.call_args[0][1] == test_url
+    assert mock_session.request.call_args.kwargs["json"] == CREATE_USER_PAYLOAD
+
+
+def test_post_uses_headers(api_client):
+    mock_session = Mock()
+    api_client.session = mock_session
+    api_client.post("/users", CREATE_USER_PAYLOAD)
+    request_headers = mock_session.request.call_args.kwargs["headers"]
+    headers_test = api_client.headers
+    assert request_headers == headers_test
+
+
+def test_post_uses_timeout(api_client):
+    mock_session = Mock()
+    api_client.session = mock_session
+    api_client.post("/users", CREATE_USER_PAYLOAD)
+    assert mock_session.request.call_args.kwargs["timeout"] == 10
+
+
+def test_post_request_arguments(api_client):
+    mock_session = Mock()
+    api_client.session = mock_session
+    test_url = "https://jsonplaceholder.typicode.com/users"
+    headers_test = api_client.headers
+    api_client.post("/users", CREATE_USER_PAYLOAD)
+    request_headers = mock_session.request.call_args.kwargs["headers"]
+    assert mock_session.request.call_args[0][0] == "POST"
+    assert mock_session.request.call_args[0][1] == test_url
+    assert mock_session.request.call_args.kwargs["json"] == CREATE_USER_PAYLOAD
+    assert request_headers == headers_test
+    assert mock_session.request.call_args.kwargs["timeout"] == 10
