@@ -21,6 +21,7 @@ class APIClient:
                 params=params,
                 timeout=10
             )
+            response.raise_for_status()
             return response
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"API request failed: {e}") from e
