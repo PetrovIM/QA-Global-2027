@@ -291,3 +291,124 @@ def test_api_client_returns_user_data(api_client, mock_session, mock_response, u
     result = api_client.get("/users")
     data = result.json()
     assert set(user_data.items()).issubset(set(data.items()))
+
+
+def test_api_client_returns_users_list(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = [
+        {
+            "id": 1,
+            "name": "Ilya Petrov"
+        },
+        {
+            "id": 2,
+            "name": "Alex Brach"
+        }
+    ]
+    result = api_client.get("/users")
+    data = result.json()
+    assert isinstance(data, list)
+    assert len(data) == 2
+    assert data[0]["id"] == 1
+    assert data[0]["name"] == "Ilya Petrov"
+    assert data[1]["id"] == 2
+    assert data[1]["name"] == "Alex Brach"
+
+
+def test_api_client_users_contains_expected_user(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = [
+        {
+            "id": 1,
+            "name": "Ilya Petrov"
+        },
+        {
+            "id": 2,
+            "name": "Alex Brach"
+        }
+    ]
+    result = api_client.get("/users")
+    data = result.json()
+    expected_user = None
+    for user in data:
+        if user["id"] == 2 and user["name"] == "Alex Brach":
+            expected_user = user
+            break
+    assert expected_user == {"id": 2, "name": "Alex Brach"}
+
+
+def test_api_client_user_not_found(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = [
+        {
+            "id": 1,
+            "name": "Ilya Petrov"
+        },
+        {
+            "id": 2,
+            "name": "Alex Brach"
+        }
+    ]
+    result = api_client.get("/users")
+    data = result.json()
+    expected_user = None
+    for user in data:
+        if user["id"] == 999 and user["name"] == "Unknown User":
+            expected_user = user
+            break
+    assert expected_user is None
+
+
+def test_api_client_user_missing_email(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = {
+        "id": 1,
+        "name": "Ilya Petrov"
+    }
+    result = api_client.get("/users")
+    data = result.json()
+    with pytest.raises(KeyError) as exc_info:
+        data["email"]
+        assert str(exc_info.value) == 'email'
+
+def test_api_client_user_email_is_null(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = {
+        "id": 1,
+        "name": "Ilya Petrov",
+        "email": None
+    }
+    result = api_client.get("/users")
+    data = result.json()
+    assert data['email'] is None
+
+def test_api_client_returns_empty_users_list(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = []
+    result = api_client.get("/users")
+    data = result.json()
+    assert isinstance(data, list)
+    assert len(data) == 0
+
+@pytest.mark.parametrize("user_data", [{
+        "id": 1,
+        "name": "Ilya Petrov",
+        "email": "ilya@example.com"
+    },
+    {
+        "id": 2,
+        "name": "Alex Brach",
+        "email": "alex@example.com"
+    }])
+def test_api_client_final(api_client, mock_session, mock_response, user_data):
+    mock_session.request.return_value = mock_response
+    update_data = user_data.copy()
+    update_data["created_at"] = "2026-08-25"
+    mock_response.json.return_value = update_data
+    result = api_client.get("/users")
+    data = result.json()
+    assert isinstance(data, dict)
+    assert set(user_data.items()).issubset(set(data.items()))
+    assert "created_at" in data
+    assert data["created_at"] is not None
+
