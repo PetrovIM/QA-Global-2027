@@ -412,3 +412,87 @@ def test_api_client_final(api_client, mock_session, mock_response, user_data):
     assert "created_at" in data
     assert data["created_at"] is not None
 
+
+def test_api_client_return_method_get(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.get("/users/1")
+    assert mock_session.request.call_args[0][0] == "GET"
+
+def test_api_client_return_url(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    test_url = "https://jsonplaceholder.typicode.com"
+    api_client.get("/users/1")
+    assert mock_session.request.call_args[0][1] == test_url + "/users/1"
+
+def test_api_client_return_params_get(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.get("/users", params={"page": 2, "limit": 10})
+    data = mock_session.request.call_args
+    assert data[1]['params'] == {"page": 2, "limit": 10}
+
+def test_api_client_return_body_post(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.post("/users", data={"name": "Ilya Petrov",
+                                    "email": "ilya@example.com"})
+    assert mock_session.request.call_args[1]['json'] == {"name": "Ilya Petrov",
+                                    "email": "ilya@example.com"}
+
+def test_api_client_return_headers(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.get("/users")
+    assert mock_session.request.call_args[1]['headers'] == {'Accept': 'application/json', 'Authorization': 'Bearer test-token'}
+
+def test_api_client_return_timeout(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.get("/users")
+    assert mock_session.request.call_args[1]['timeout'] == 10
+
+def test_api_client_return_all_args_get(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.get("/users", params={"page": 2})
+    mock_session.request.assert_called_once_with("GET", api_client.base_url + "/users", json=None, headers={'Accept': 'application/json', 'Authorization': 'Bearer test-token'}, params={"page": 2}, timeout=10)
+
+def test_api_client_return_all_args_post(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.post("/users", data={"name": "Ilya Petrov", "email": "ilya@example.com"})
+    mock_session.request.assert_called_once_with("POST", api_client.base_url + "/users", json= {"name": "Ilya Petrov", "email": "ilya@example.com"},headers={'Accept': 'application/json', 'Authorization': 'Bearer test-token'}, params=None, timeout=10)
+
+def test_api_client_return_json_post(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.post("/users", data=None)
+    mock_session.request.assert_called_once_with("POST", api_client.base_url + "/users", json= None ,headers={'Accept': 'application/json', 'Authorization': 'Bearer test-token'}, params=None, timeout=10 )
+
+def test_api_client_exception_get(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_session.request.side_effect = requests.exceptions.RequestException
+    with pytest.raises(RuntimeError) as exc_info:
+        api_client.get("/users/1")
+    assert isinstance(exc_info.value.__cause__, requests.exceptions.RequestException)
+
+def test_api_client_exception_timeout(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    error = requests.exceptions.Timeout("Connection timed out")
+    mock_session.request.side_effect = error
+    with pytest.raises(RuntimeError, match="API request failed: Connection timed out") as exc_info:
+        api_client.get("/users/1")
+    assert exc_info.value.__cause__ is error
+    assert str(exc_info.value) == "API request failed: Connection timed out"
+
+@pytest.mark.parametrize("error", [requests.exceptions.Timeout("Connection timed out"),
+    requests.exceptions.ConnectionError("Connection failed"),])
+def test_api_client_exception_parament(api_client, mock_session, mock_response, error):
+    mock_session.request.return_value = mock_response
+    mock_session.request.side_effect = error
+    with pytest.raises(RuntimeError) as exc_info:
+        api_client.get("/users/1")
+    assert exc_info.value.__cause__ is error
+
+
+def test_api_client_exception_called_once(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    error = requests.exceptions.Timeout("Connection timed out")
+    mock_session.request.side_effect = error
+    with pytest.raises(RuntimeError):
+        api_client.get("/users/1")
+    mock_session.request.assert_called_once()
+
