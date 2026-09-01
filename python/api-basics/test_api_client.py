@@ -1,6 +1,7 @@
 import pytest
 import requests
 from requests import HTTPError
+from requests.exceptions import InvalidJSONError
 
 from test_data import *
 from unittest.mock import Mock
@@ -292,7 +293,6 @@ def test_api_client_returns_user_data(api_client, mock_session, mock_response, u
     data = result.json()
     assert set(user_data.items()).issubset(set(data.items()))
 
-
 def test_api_client_returns_users_list(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
     mock_response.json.return_value = [
@@ -496,3 +496,72 @@ def test_api_client_exception_called_once(api_client, mock_session, mock_respons
         api_client.get("/users/1")
     mock_session.request.assert_called_once()
 
+def test_api_client_exception_404(api_client, mock_session, mock_response):
+    response = requests.Response()
+    response.status_code = 404
+    response.reason = "Not Found"
+    response.url = "https://example.com/users/999"
+    mock_session.request.return_value = response
+    with pytest.raises(RuntimeError):
+        api_client.get("/users/999")
+    mock_session.request.assert_called_once()
+
+
+def test_api_client_raise_for_status(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.get("/users/1")
+    mock_response.raise_for_status.assert_called_once()
+
+def test_api_client_response_json(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = {
+        "id": 1,
+        "name": "Ilya Petrov"
+    }
+    result = api_client.get("/users/1")
+    result.json()
+    mock_response.json.assert_called_once()
+
+def test_api_client_error_response_json(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    error = requests.exceptions.InvalidJSONError("Invalid JSON")
+    mock_response.json.side_effect = error
+    with pytest.raises(InvalidJSONError):
+        result = api_client.get("/users/1")
+        result.json()
+    mock_response.json.assert_called_once()
+
+@pytest.mark.parametrize("status_code, reason", [(404, "Not Found"), (500, "Internal Server Error")])
+def test_api_client_error_response_parametrized(api_client, mock_session,status_code, reason):
+    response = requests.Response()
+    response.status_code = status_code
+    response.reason = reason
+    response.url = "https://example.com/users/999"
+    mock_session.request.return_value = response
+    with pytest.raises(RuntimeError) as exc_info:
+        api_client.get("/users/999")
+    assert isinstance(exc_info.value.__cause__, requests.exceptions.HTTPError)
+    assert str(exc_info.value.__cause__) == f"{status_code} {'Client Error:' if status_code < 500 else 'Server Error:'} {reason} for url: {response.url}"
+
+def test_api_client_scope_get(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = {
+        "id": 1,
+        "name": "Ilya Petrov",
+        "email": "ilya@example.com"
+    }
+    result = api_client.get("/users/1")
+    data = result.json()
+    mock_response.raise_for_status.assert_called_once()
+    mock_session.request.assert_called_once_with("GET", api_client.base_url + "/users/1", json=None,
+                                                 headers={
+                                                     'Accept': 'application/json',
+                                                     'Authorization': 'Bearer test-token'
+                                                     },
+                                                 params=None,
+                                                 timeout=10)
+    assert data == {
+        "id": 1,
+        "name": "Ilya Petrov",
+        "email": "ilya@example.com"
+    }
