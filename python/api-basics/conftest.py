@@ -25,4 +25,16 @@ def mock_session(api_client) -> Mock:
     api_client.session = mock_session
     return mock_session
 
+@pytest.fixture()
+def mock_returns(mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    yield mock_response
+
+@pytest.fixture()
+def user_data():
+    return {
+        "id": 1,
+        "name": "Ilya Petrov",
+        "email": "ilya@example.com"
+    }
 
