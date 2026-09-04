@@ -1,6 +1,7 @@
 import pytest
 import requests
 from requests import HTTPError
+from requests.exceptions import InvalidJSONError
 
 from test_data import *
 from unittest.mock import Mock
@@ -292,7 +293,6 @@ def test_api_client_returns_user_data(api_client, mock_session, mock_response, u
     data = result.json()
     assert set(user_data.items()).issubset(set(data.items()))
 
-
 def test_api_client_returns_users_list(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
     mock_response.json.return_value = [
@@ -416,26 +416,27 @@ def test_api_client_final(api_client, mock_session, mock_response, user_data):
 def test_api_client_return_method_get(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
     api_client.get("/users/1")
-    assert mock_session.request.call_args[0][0] == "GET"
+    assert_request_method(mock_session, "GET")
 
 def test_api_client_return_url(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
-    test_url = "https://jsonplaceholder.typicode.com"
+    test_url = api_client.base_url
     api_client.get("/users/1")
-    assert mock_session.request.call_args[0][1] == test_url + "/users/1"
+    assert_request_url(mock_session, test_url + "/users/1")
+
 
 def test_api_client_return_params_get(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
-    api_client.get("/users", params={"page": 2, "limit": 10})
-    data = mock_session.request.call_args
-    assert data[1]['params'] == {"page": 2, "limit": 10}
+    params = {"page": 2, "limit": 10}
+    api_client.get("/users", params=params)
+    assert_request_params(mock_session, params)
 
 def test_api_client_return_body_post(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
-    api_client.post("/users", data={"name": "Ilya Petrov",
-                                    "email": "ilya@example.com"})
-    assert mock_session.request.call_args[1]['json'] == {"name": "Ilya Petrov",
-                                    "email": "ilya@example.com"}
+    data = {"name": "Ilya Petrov",
+            "email": "ilya@example.com"}
+    api_client.post("/users", data=data)
+    assert_request_body(mock_session, data)
 
 def test_api_client_return_headers(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
@@ -454,8 +455,10 @@ def test_api_client_return_all_args_get(api_client, mock_session, mock_response)
 
 def test_api_client_return_all_args_post(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
-    api_client.post("/users", data={"name": "Ilya Petrov", "email": "ilya@example.com"})
-    mock_session.request.assert_called_once_with("POST", api_client.base_url + "/users", json= {"name": "Ilya Petrov", "email": "ilya@example.com"},headers={'Accept': 'application/json', 'Authorization': 'Bearer test-token'}, params=None, timeout=10)
+    test_data = {"name": "Ilya Petrov", "email": "ilya@example.com"}
+    api_client.post("/users", data=test_data)
+    assert_request(mock_session,"POST", api_client.base_url + "/users", None, test_data)
+
 
 def test_api_client_return_json_post(api_client, mock_session, mock_response):
     mock_session.request.return_value = mock_response
@@ -495,4 +498,168 @@ def test_api_client_exception_called_once(api_client, mock_session, mock_respons
     with pytest.raises(RuntimeError):
         api_client.get("/users/1")
     mock_session.request.assert_called_once()
+
+def test_api_client_exception_404(api_client, mock_session, mock_response):
+    response = requests.Response()
+    response.status_code = 404
+    response.reason = "Not Found"
+    response.url = "https://example.com/users/999"
+    mock_session.request.return_value = response
+    with pytest.raises(RuntimeError):
+        api_client.get("/users/999")
+    mock_session.request.assert_called_once()
+
+
+def test_api_client_raise_for_status(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    api_client.get("/users/1")
+    mock_response.raise_for_status.assert_called_once()
+
+def test_api_client_response_json(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    mock_response.json.return_value = {
+        "id": 1,
+        "name": "Ilya Petrov"
+    }
+    result = api_client.get("/users/1")
+    result.json()
+    mock_response.json.assert_called_once()
+
+def test_api_client_error_response_json(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    error = requests.exceptions.InvalidJSONError("Invalid JSON")
+    mock_response.json.side_effect = error
+    with pytest.raises(InvalidJSONError):
+        result = api_client.get("/users/1")
+        result.json()
+    mock_response.json.assert_called_once()
+
+@pytest.mark.parametrize("status_code, reason", [(404, "Not Found"), (500, "Internal Server Error")])
+def test_api_client_error_response_parametrized(api_client, mock_session,status_code, reason):
+    response = requests.Response()
+    response.status_code = status_code
+    response.reason = reason
+    response.url = "https://example.com/users/999"
+    mock_session.request.return_value = response
+    with pytest.raises(RuntimeError) as exc_info:
+        api_client.get("/users/999")
+    assert isinstance(exc_info.value.__cause__, requests.exceptions.HTTPError)
+    assert str(exc_info.value.__cause__) == f"{status_code} {'Client Error:' if status_code < 500 else 'Server Error:'} {reason} for url: {response.url}"
+
+def test_api_client_scope_get(api_client, mock_session, mock_response):
+    mock_session.request.return_value = mock_response
+    test_data = {
+        "id": 1,
+        "name": "Ilya Petrov",
+        "email": "ilya@example.com"
+    }
+    mock_response.json.return_value = test_data
+    result = api_client.get("/users/1")
+    data = result.json()
+    mock_response.raise_for_status.assert_called_once()
+    mock_session.request.assert_called_once_with("GET", api_client.base_url + "/users/1", json=None,
+                                                 headers={
+                                                     'Accept': 'application/json',
+                                                     'Authorization': 'Bearer test-token'
+                                                     },
+                                                 params=None,
+                                                 timeout=10)
+    assert data == {
+        "id": 1,
+        "name": "Ilya Petrov",
+        "email": "ilya@example.com"
+    }
+    assert_request(mock_session,"GET",api_client.base_url + "/users/1", None, None)
+
+def test_api_client_return_method_get_with_mock(mock_returns,api_client, mock_session):
+    mock_returns.json.return_value = {
+        "id": 1,
+        "name": "Ilya Petrov",
+    }
+    api_client.get("/users/1")
+    call_args = mock_session.request.call_args
+    args = call_args[0]
+    assert args[1] == api_client.base_url + "/users/1"
+    assert args[0] == 'GET'
+
+@pytest.mark.parametrize("id, name, email", [(1, "Ilya Petrov", "ilya@example.com"), (2, "Alex Brach", "alex@example.com")])
+def test_api_client_with_mock_returns(api_client, mock_returns, id, name, email):
+        user_data_test = {"id": id, "name": name, "email": email}
+        mock_returns.json.return_value = user_data_test
+        mock_returns.status_code = 200
+        result = api_client.get(f"/users/{id}")
+        assert_api_response(result, user_data_test)
+
+def assert_user_data(actual_data, expected_data):
+     assert actual_data['id'] == expected_data['id']
+     assert actual_data['name'] == expected_data['name']
+     assert actual_data['email'] == expected_data['email']
+
+def assert_api_response(response, expected_data):
+    assert_status_code(response, 200)
+    actual_data = response.json()
+    assert_user_data(actual_data, expected_data)
+
+def assert_status_code(response, expected_status_code):
+    assert response.status_code == expected_status_code
+
+def assert_request_method(mock_session, expected_method):
+    assert mock_session.request.call_args[0][0] == expected_method
+
+def assert_request_url(mock_session, expected_url):
+    assert mock_session.request.call_args[0][1] == expected_url
+
+def assert_request_params(mock_session, expected_params):
+    assert mock_session.request.call_args[1]['params'] == expected_params
+
+def assert_request_body(mock_session, expected_body):
+    assert mock_session.request.call_args[1]['json'] == expected_body
+
+def assert_request(mock_session, expected_method, expected_url, expected_params, expected_body):
+    assert_request_method(mock_session, expected_method)
+    assert_request_url(mock_session, expected_url)
+    assert_request_params(mock_session, expected_params)
+    assert_request_body(mock_session, expected_body)
+
+@pytest.mark.smoke
+def test_api_client_with_helper_get_200(api_client, mock_returns, user_data):
+    mock_returns.status_code = 200
+    mock_returns.json.return_value = user_data
+    result = api_client.get("/users/1")
+    assert_api_response(result, user_data)
+
+@pytest.mark.api
+def test_api_client_get_404(api_client,mock_session):
+    response = requests.Response()
+    response.status_code = 404
+    response.reason = "Not Found"
+    response.url = "https://example.com/users/999"
+    mock_session.request.return_value = response
+    with pytest.raises(RuntimeError) as exc_info:
+        api_client.get("/users/999")
+    assert isinstance(exc_info.value.__cause__, requests.exceptions.HTTPError)
+    assert exc_info.value.__cause__.response.status_code == 404
+    mock_session.request.assert_called_once()
+
+@pytest.mark.smoke
+@pytest.mark.api
+def test_api_client_final_post(api_client, mock_session, mock_response):
+        mock_session.request.return_value = mock_response
+        mock_response.status_code = 201
+        request_test = {
+            "name": "Ilya Petrov",
+            "email": "ilya@example.com"
+        }
+        response_data = {
+            "id": 1,
+            "name": "Ilya Petrov",
+            "email": "ilya@example.com"
+        }
+        mock_response.json.return_value = response_data
+        result = api_client.post("/users", data=request_test)
+        data = result.json()
+        assert_request(mock_session, "POST", api_client.base_url + "/users", None, request_test)
+        assert_user_data(data, response_data)
+        assert result.status_code == 201
+
 
