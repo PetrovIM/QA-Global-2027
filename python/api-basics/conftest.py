@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pytest
 from api_client import *
 from config import *
+from users_api import *
 
 
 @pytest.fixture()
@@ -37,4 +38,10 @@ def user_data():
         "name": "Ilya Petrov",
         "email": "ilya@example.com"
     }
+
+@pytest.fixture()
+def users_api(api_client):
+    users_api = UsersAPI(api_client)
+    return users_api
+
 

@@ -663,3 +663,32 @@ def test_api_client_final_post(api_client, mock_session, mock_response):
         assert result.status_code == 201
 
 
+# Тест можно потом удалить. Создавался для первичной проверки UsersAPI
+@pytest.mark.smoke
+def test_api_client_with_helper_get_200(users_api, mock_returns, user_data):
+    mock_returns.status_code = 200
+    mock_returns.json.return_value = user_data
+    result = users_api.get_user(1)
+    assert_api_response(result, user_data)
+
+def test_users_api_get_user(users_api):
+    mock_get = Mock()
+    users_api.api_client.get = mock_get
+    users_api.get_user(1)
+    mock_get.assert_called_once_with("/users/1")
+
+def test_user_api_post_user(users_api, user_data):
+    mock_post = Mock()
+    users_api.api_client.post = mock_post
+    users_api.create_user(user_data)
+    mock_post.assert_called_once_with(endpoint='/users', data=user_data)
+
+def test_users_api_get_response(users_api, mock_returns, user_data):
+    mock_returns.status_code = 200
+    mock_returns.json.return_value = user_data
+    result = users_api.get_user(1)
+    assert_status_code(result, 200)
+    assert_user_data(result.json(), user_data)
+
+
+
