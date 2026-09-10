@@ -3,7 +3,8 @@ import requests
 from requests import HTTPError
 from requests.exceptions import InvalidJSONError
 
-from test_data import *
+from test_data.user_factory import UserFactory
+from test_data_user import *
 from unittest.mock import Mock
 
 
@@ -689,6 +690,13 @@ def test_users_api_get_response(users_api, mock_returns, user_data):
     result = users_api.get_user(1)
     assert_status_code(result, 200)
     assert_user_data(result.json(), user_data)
+
+def test_user_factoty():
+    user = UserFactory()
+    user.create_user_data("Ilya","ggree","efwefwe","fewfwe", "wefew")
+    assert isinstance(user, UserFactory)
+
+
 
 
 
