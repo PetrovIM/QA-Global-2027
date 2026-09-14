@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pytest
 from api_client import *
 from config import *
+from python.api_basics.test_data.user_factory import UserFactory
 from users_api import *
 
 
@@ -44,4 +45,8 @@ def users_api(api_client):
     users_api = UsersAPI(api_client)
     return users_api
 
+@pytest.fixture()
+def user_factory():
+    user_factory = UserFactory()
+    return user_factory
 
