@@ -5,6 +5,7 @@ import requests
 from requests import HTTPError
 from requests.exceptions import InvalidJSONError
 
+from python.api_basics.test_data.user import User
 from python.api_basics.test_data.user_data import USER_DATA
 from test_data.user import User
 from test_data.user_factory import UserFactory
@@ -728,12 +729,16 @@ def test_user_factory_override():
     assert user_data.email == "new@test.com"
 
 # Тест личный, можной удалить
-def test_user_factory_post(users_api):
-    user = UserFactory()
-    test = user.create_user_data("Ilya","ggree","efwefwe","fewfwe", "wefew")
-    user_data = json.dumps(test.to_dict())
-    result = users_api.create_user(user_data)
-    print(user_data)
+def test_user_factory_post(users_api, user_factory):
+    test = user_factory.create_user_data("Ilya", "Ivanov", "9999999999", "test@test.test")
+    result = users_api.create_user(test)
+    assert_status_code(result, 201)
+    id_test = result.json()["id"]
+    result_id = users_api.get_user(id_test)
+    assert_status_code(result_id, 200)
+    assert_user_data(result_id.json(), test)
+
+
 
 
 
