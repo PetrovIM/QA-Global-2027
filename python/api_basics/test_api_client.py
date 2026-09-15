@@ -1,8 +1,13 @@
+import json
+
 import pytest
 import requests
 from requests import HTTPError
 from requests.exceptions import InvalidJSONError
 
+from python.api_basics.test_data.user import User
+from python.api_basics.test_data.user_data import USER_DATA
+from test_data.user import User
 from test_data.user_factory import UserFactory
 from test_data_user import *
 from unittest.mock import Mock
@@ -693,8 +698,48 @@ def test_users_api_get_response(users_api, mock_returns, user_data):
 
 def test_user_factoty():
     user = UserFactory()
-    user.create_user_data("Ilya","ggree","efwefwe","fewfwe", "wefew")
-    assert isinstance(user, UserFactory)
+    user_data = user.create_user_data("Ilya","ggree","efwefwe","fewfwe", "wefew")
+    assert isinstance(user_data, User)
+    assert user_data.first_name == "Ilya"
+    assert user_data.last_name == "ggree"
+    assert user_data.email == "fewfwe"
+    assert user_data.gender is None
+    assert user_data.status == "new"
+    assert user_data.phone == "efwefwe"
+
+def test_user_factory_gender_status():
+    user = UserFactory()
+    user_data = user.create_user_data("asd","adas","asdas", "das", "asd","active", "male")
+    assert user_data.gender == "male"
+    assert user_data.status == "active"
+
+def test_user_factory_attributes(user_factory):
+    user_data = user_factory.create_user_data()
+    assert user_data.first_name == USER_DATA["first_name"]
+    assert user_data.last_name == USER_DATA["last_name"]
+    assert user_data.email == USER_DATA["email"]
+    assert user_data.phone == USER_DATA["phone"]
+    assert user_data.address == USER_DATA["address"]
+    assert user_data.gender is None
+    assert user_data.status == "new"
+
+def test_user_factory_override():
+    user = UserFactory()
+    user_data = user.create_user_data(email="new@test.com")
+    assert user_data.email == "new@test.com"
+
+# Тест личный, можной удалить
+def test_user_factory_post(users_api, user_factory):
+    test = user_factory.create_user_data("Ilya", "Ivanov", "9999999999", "test@test.test")
+    result = users_api.create_user(test)
+    assert_status_code(result, 201)
+    id_test = result.json()["id"]
+    result_id = users_api.get_user(id_test)
+    assert_status_code(result_id, 200)
+    assert_user_data(result_id.json(), test)
+
+
+
 
 
 

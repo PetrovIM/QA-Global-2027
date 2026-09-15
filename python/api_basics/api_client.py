@@ -1,6 +1,8 @@
 import requests
 from requests import session
+import logging
 
+logger = logging.getLogger(__name__)
 
 class APIClient:
     def __init__(self, base_url, headers=None):
@@ -12,6 +14,7 @@ class APIClient:
         return f"{self.base_url.rstrip("/")}/{endpoint.lstrip("/")}"
 
     def _request(self, method, endpoint, data=None, params=None):
+        logger.info(f"Request method: {method}, endpoint: {endpoint}")
         try:
             response =  self.session.request(
                 method,
@@ -22,8 +25,10 @@ class APIClient:
                 timeout=10
             )
             response.raise_for_status()
+            logger.info(f"Response status: {response.status_code}")
             return response
         except requests.exceptions.RequestException as e:
+            logger.error(f"API request failed: {e}")
             raise RuntimeError(f"API request failed: {e}") from e
 
 

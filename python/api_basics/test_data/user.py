@@ -11,6 +11,16 @@ class User:
     def __str__(self):
         return f"{self.first_name} {self.last_name} {self.phone} {self.email} {self.address} {self.status} {self.gender}"
 
+    def to_dict(self):
+        return {
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "gender": self.gender,
+            "phone": self.phone,
+            "email": self.email,
+            "address": self.address,
+            "status": self.status,
+        }
 
 user1 = User("Ilya", "Petrov", "9061221212", "test@test.test","Yaroslavl","success", "male")
 print(user1)
