@@ -728,15 +728,21 @@ def test_user_factory_override():
     user_data = user.create_user_data(email="new@test.com")
     assert user_data.email == "new@test.com"
 
+def test_db_connect(db_client):
+    data = db_client.select_db("SELECT * FROM users")
+    count = len(data)
+    assert count > 0
+
+
 # Тест личный, можной удалить
-def test_user_factory_post(users_api, user_factory):
-    test = user_factory.create_user_data("Ilya", "Ivanov", "9999999999", "test@test.test")
-    result = users_api.create_user(test)
-    assert_status_code(result, 201)
-    id_test = result.json()["id"]
-    result_id = users_api.get_user(id_test)
-    assert_status_code(result_id, 200)
-    assert_user_data(result_id.json(), test)
+# def test_user_factory_post(users_api, user_factory):
+#     test = user_factory.create_user_data("Ilya", "Ivanov", "9999999999", "test@test.test")
+#     result = users_api.create_user(test)
+#     assert_status_code(result, 201)
+#     id_test = result.json()["id"]
+#     result_id = users_api.get_user(id_test)
+#     assert_status_code(result_id, 200)
+#     assert_user_data(result_id.json(), test)
 
 
 

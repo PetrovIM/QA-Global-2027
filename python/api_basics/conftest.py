@@ -4,6 +4,7 @@ import pytest
 from api_client import *
 from config import *
 from python.api_basics.test_data.user_factory import UserFactory
+from sql.db_client import DBClient
 from users_api import *
 
 
@@ -50,3 +51,9 @@ def user_factory():
     user_factory = UserFactory()
     return user_factory
 
+@pytest.fixture()
+def db_client():
+    db_client = DBClient()
+    db_client.connect_db()
+    yield db_client
+    db_client.close_db()
