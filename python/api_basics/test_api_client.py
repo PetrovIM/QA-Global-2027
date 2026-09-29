@@ -753,7 +753,7 @@ def test_create_user_integration(integration_api_client, db_client):
             empty_client = db_client.select_db("SELECT * FROM users WHERE id= %s", (id_client,))
             assert empty_client == []
     else:
-        assert False, "Пользователь в БД не найден"
+        assert False, "Пользователь в БД не найден в БД"
 
 # Тест личный, можной удалить
 # def test_user_factory_post(users_api, user_factory):
