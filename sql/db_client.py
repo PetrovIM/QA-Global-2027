@@ -31,9 +31,9 @@ class DBClient:
             self.conn.close()
 
 # Функция SELECT
-    def select_db(self, sql_request):
+    def select_db(self, sql_request, value=None):
         cursor = self.conn.cursor()
-        cursor.execute(sql_request)
+        cursor.execute(sql_request, value)
         result = cursor.fetchall()
         cursor.close()
         return result
@@ -46,5 +46,11 @@ class DBClient:
         self.conn.commit()
         cursor.close()
 
+#Функция DELETE
+    def delete_db(self, sql_request, value):
+        cursor = self.conn.cursor()
+        cursor.execute(sql_request, value)
+        self.conn.commit()
+        cursor.close()
 
 

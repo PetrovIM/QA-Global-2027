@@ -17,6 +17,13 @@ def api_client():
         })
     return response_url
 
+@pytest.fixture()
+def integration_api_client():
+    response_url = APIClient(
+        BASE_URL_LOCAL,{"Accept": "application/json"}
+    )
+    return response_url
+
 
 @pytest.fixture()
 def mock_response(api_client) -> Mock:

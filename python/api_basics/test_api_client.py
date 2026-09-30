@@ -2,6 +2,7 @@ import json
 
 import pytest
 import requests
+from anyio.itertools import count
 from requests import HTTPError
 from requests.exceptions import InvalidJSONError
 
@@ -733,6 +734,26 @@ def test_db_connect(db_client):
     count = len(data)
     assert count > 0
 
+def test_create_user_integration(integration_api_client, db_client):
+    user = {"username": "Kwefeffefefriаwrffedily",
+            "email": "keffwerefwfeifreаdefly@test.ru",
+            "age": 9}
+    request = integration_api_client.post("/users", data=user)
+    value = (user["email"],)
+    client = db_client.select_db("SELECT * FROM users WHERE email= %s", value)
+    if client != []:
+        id_client = client[0][0]
+        try:
+            assert_status_code(request, 200)
+            count = len(client)
+            assert count > 0
+        finally:
+            delete_client = integration_api_client.delete(f"/users/{id_client}")
+            assert_status_code(delete_client, 200)
+            empty_client = db_client.select_db("SELECT * FROM users WHERE id= %s", (id_client,))
+            assert empty_client == []
+    else:
+        assert False, "Пользователь в БД не найден в БД"
 
 # Тест личный, можной удалить
 # def test_user_factory_post(users_api, user_factory):

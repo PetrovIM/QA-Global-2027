@@ -43,3 +43,6 @@ class APIClient:
 
     def patch(self, endpoint, data):
         return self._request("PATCH", endpoint, data)
+
+    def delete(self, endpoint):
+        return self._request("DELETE", endpoint)
