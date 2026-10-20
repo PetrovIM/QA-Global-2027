@@ -1,5 +1,4 @@
 import requests
-from requests import session
 import logging
 
 logger = logging.getLogger(__name__)

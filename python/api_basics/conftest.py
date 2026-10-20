@@ -1,9 +1,6 @@
 from unittest.mock import Mock
 
 import pytest
-from playwright.async_api import Page
-
-from api_client import *
 from config import *
 from python.api_basics.test_data.user_factory import UserFactory
 from sql.db_client import DBClient
