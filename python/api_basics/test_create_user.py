@@ -1,5 +1,4 @@
 import requests
-import pytest
 
 url = "https://jsonplaceholder.typicode.com/users"
 

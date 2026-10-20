@@ -1,12 +1,6 @@
-import json
-
 import pytest
 import requests
-from anyio.itertools import count
-from requests import HTTPError
 from requests.exceptions import InvalidJSONError
-
-from python.api_basics.test_data.user import User
 from python.api_basics.test_data.user_data import USER_DATA
 from test_data.user import User
 from test_data.user_factory import UserFactory
