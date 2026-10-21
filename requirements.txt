@@ -4,3 +4,5 @@ playwright==1.63.0
 pytest-playwright==0.9.0
 python-dotenv
 psycopg[binary]
+fastapi
+uvicorn
