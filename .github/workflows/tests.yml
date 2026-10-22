@@ -1,0 +1,9 @@
+name: QA Automation Tests
+on: push
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print workflow message
+        run: echo "GitHub Actions is working!"
+
