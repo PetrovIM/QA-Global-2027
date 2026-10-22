@@ -4,6 +4,6 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - name: Print workflow message
+      - name: Print workflow message test
         run: echo "GitHub Actions is working!"
 
