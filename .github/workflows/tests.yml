@@ -72,7 +72,7 @@ jobs:
             exit 1
           fi
       - name: Run pytest
-        run: python -m pytest -v --junitxml=pytest-report.xml
+        run: python -m pytest -v --junitxml=pytest-report.xml --alluredir=allure-results
 
       - name: Add report
         if: always()
