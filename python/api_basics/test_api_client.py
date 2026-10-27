@@ -674,9 +674,11 @@ def test_api_client_with_helper_get_200(users_api, mock_returns, user_data):
 
 def test_users_api_get_user(users_api):
     mock_get = Mock()
+    mock_get.return_value = {"id": 1, "name": "Test User"}
     users_api.api_client.get = mock_get
-    users_api.get_user(1)
+    result = users_api.get_user(1)
     mock_get.assert_called_once_with("/users/1")
+    assert result["id"] == 1
 
 def test_user_api_post_user(users_api, user_data):
     mock_post = Mock()
@@ -747,17 +749,9 @@ def test_create_user_integration(integration_api_client, db_client):
             empty_client = db_client.select_db("SELECT * FROM users WHERE id= %s", (id_client,))
             assert empty_client == []
     else:
-        assert False, "Пользователь в БД не найден в БД"
+        assert False, "Пользователь не найден в БД"
 
-# Тест личный, можной удалить
-# def test_user_factory_post(users_api, user_factory):
-#     test = user_factory.create_user_data("Ilya", "Ivanov", "9999999999", "test@test.test")
-#     result = users_api.create_user(test)
-#     assert_status_code(result, 201)
-#     id_test = result.json()["id"]
-#     result_id = users_api.get_user(id_test)
-#     assert_status_code(result_id, 200)
-#     assert_user_data(result_id.json(), test)
+
 
 
 

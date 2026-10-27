@@ -10,5 +10,8 @@ __pycache__/
 .vscode/
 .env
 
-.DS_Store
+# Test reports
+allure-results/
+allure-report/
+pytest-report.xml
 ci-artifacts/
