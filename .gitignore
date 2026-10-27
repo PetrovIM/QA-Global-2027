@@ -10,8 +10,8 @@ __pycache__/
 .vscode/
 .env
 
-ci-artifacts/
 # Test reports
 allure-results/
 allure-report/
 pytest-report.xml
+ci-artifacts/
