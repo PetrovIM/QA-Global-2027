@@ -37,7 +37,9 @@ services:
       retries: 10
   tests:
     build: .
-    command: [ "python", "-m", "pytest", "-v" ]
+    command: [ "python", "-m", "pytest", "-v", "--junitxml=/artifacts/pytest-report.xml", "--alluredir=/artifacts/allure-results"]
+    volumes:
+      - ./ci-artifacts:/artifacts
     environment:
       DB_NAME: qa_db
       DB_HOST: db
